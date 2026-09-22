@@ -6,19 +6,26 @@ import type { Colaborador, Curso } from "@/lib/database.types";
 
 export default async function RelatoriosPage() {
   const gestor = await getGestorAtual();
+  const ehGestorGeral = gestor.setor_id === null;
   const supabase = await createClient();
 
-  const { data: colaboradores } = await supabase
+  let colaboradoresQuery = supabase
     .from("colaboradores")
     .select("*")
-    .eq("setor_id", gestor.setor_id)
     .order("nome", { ascending: true });
+  if (!ehGestorGeral) {
+    colaboradoresQuery = colaboradoresQuery.eq("setor_id", gestor.setor_id);
+  }
+  const { data: colaboradores } = await colaboradoresQuery;
 
-  const { data: cursos } = await supabase
+  let cursosQuery = supabase
     .from("cursos")
     .select("*")
-    .eq("setor_id", gestor.setor_id)
     .order("ordem", { ascending: true });
+  if (!ehGestorGeral) {
+    cursosQuery = cursosQuery.eq("setor_id", gestor.setor_id);
+  }
+  const { data: cursos } = await cursosQuery;
 
   const listaColaboradores = (colaboradores ?? []) as Colaborador[];
   const listaCursos = (cursos ?? []) as Curso[];
@@ -78,7 +85,7 @@ export default async function RelatoriosPage() {
       </div>
 
       <main className="main">
-        <span className="gestor-badge">Gestor · {gestor.setor_nome}</span>
+        <span className="gestor-badge">Gestor · {gestor.setor_nome ?? "Todos os setores"}</span>
         <GestorTabs ativa="relatorios" />
 
         {listaCursos.length === 0 && (

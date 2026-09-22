@@ -1,9 +1,19 @@
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
 import { getGestorAtual } from "@/lib/auth";
 import { criarCurso } from "@/app/gestor/actions";
+import type { Setor } from "@/lib/database.types";
 
 export default async function NovoCursoPage() {
-  await getGestorAtual();
+  const gestor = await getGestorAtual();
+  const ehGestorGeral = gestor.setor_id === null;
+
+  let setores: Setor[] = [];
+  if (ehGestorGeral) {
+    const supabase = await createClient();
+    const { data } = await supabase.from("setores").select("*").order("nome");
+    setores = data ?? [];
+  }
 
   return (
     <div className="app-shell">
@@ -16,6 +26,24 @@ export default async function NovoCursoPage() {
         </p>
 
         <form action={criarCurso}>
+          {ehGestorGeral && (
+            <>
+              <label className="field-label" htmlFor="setor_id">
+                Setor
+              </label>
+              <select id="setor_id" name="setor_id" className="field-input" required defaultValue="">
+                <option value="" disabled>
+                  Selecione o setor
+                </option>
+                {setores.map((setor) => (
+                  <option key={setor.id} value={setor.id}>
+                    {setor.nome}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
+
           <label className="field-label" htmlFor="titulo">
             Titulo
           </label>

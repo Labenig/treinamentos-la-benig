@@ -84,7 +84,7 @@ export default async function Home() {
 
       <main className="main">
         {colaborador.papel === "gestor" && (
-          <span className="gestor-badge">Gestor · {colaborador.setor_nome}</span>
+          <span className="gestor-badge">Gestor · {colaborador.setor_nome ?? "Todos os setores"}</span>
         )}
 
         {categorias.size === 0 && (

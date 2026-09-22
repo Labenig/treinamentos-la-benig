@@ -52,7 +52,15 @@ export async function POST(
     return NextResponse.json({ error: "Nenhuma resposta enviada." }, { status: 400 });
   }
 
-  const admin = createAdminClient();
+  let admin;
+  try {
+    admin = createAdminClient();
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Erro de configuracao no servidor." },
+      { status: 500 }
+    );
+  }
   const { data: perguntas } = await admin
     .from("perguntas")
     .select("id, correta")

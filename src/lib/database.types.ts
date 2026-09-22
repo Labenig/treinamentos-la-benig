@@ -12,7 +12,9 @@ export interface Colaborador {
   id: string;
   nome: string;
   email: string;
-  setor_id: string;
+  // Nulo somente pra gestor "geral" (administra todos os setores de uma
+  // vez); colaborador comum e gestor de setor sempre tem um setor_id.
+  setor_id: string | null;
   papel: Papel;
   senha_trocada: boolean;
   criado_em: string;

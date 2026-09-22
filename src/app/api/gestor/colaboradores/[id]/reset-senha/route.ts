@@ -29,14 +29,16 @@ export async function POST(
   const url = new URL("/gestor/colaboradores", request.url);
 
   // So pode resetar senha de quem e do mesmo setor (RLS ja garante isso na
-  // leitura, mas confere de novo aqui antes de chamar a admin API).
+  // leitura, mas confere de novo aqui antes de chamar a admin API). Gestor
+  // geral (setor_id nulo) pode resetar senha de qualquer setor.
+  const ehGestorGeral = gestor.setor_id === null;
   const { data: alvo } = await supabase
     .from("colaboradores")
     .select("id, nome, setor_id")
     .eq("id", id)
     .maybeSingle();
 
-  if (!alvo || alvo.setor_id !== gestor.setor_id) {
+  if (!alvo || (!ehGestorGeral && alvo.setor_id !== gestor.setor_id)) {
     url.searchParams.set("erro", encodeURIComponent("Colaborador nao encontrado."));
     return NextResponse.redirect(url);
   }
@@ -50,7 +52,16 @@ export async function POST(
     return NextResponse.redirect(url);
   }
 
-  const admin = createAdminClient();
+  let admin;
+  try {
+    admin = createAdminClient();
+  } catch (e) {
+    url.searchParams.set(
+      "erro",
+      encodeURIComponent(e instanceof Error ? e.message : "Erro de configuracao no servidor.")
+    );
+    return NextResponse.redirect(url);
+  }
   const { error } = await admin.auth.admin.updateUserById(id, { password: senhaPadrao });
 
   if (error) {

@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getGestorAtual } from "@/lib/auth";
 import GestorTabs from "@/components/GestorTabs";
 import { atualizarPapelColaborador } from "@/app/gestor/actions";
-import type { Colaborador } from "@/lib/database.types";
+import type { Colaborador, Setor } from "@/lib/database.types";
 
 export default async function ColaboradoresPage({
   searchParams,
@@ -11,14 +11,30 @@ export default async function ColaboradoresPage({
   searchParams: Promise<{ msg?: string; erro?: string }>;
 }) {
   const gestor = await getGestorAtual();
+  const ehGestorGeral = gestor.setor_id === null;
   const { msg, erro } = await searchParams;
   const supabase = await createClient();
 
-  const { data: colaboradores } = await supabase
+  // Gestor de setor ve so o proprio time (RLS ja filtra); gestor geral ve
+  // todo mundo. Sempre junta o nome do setor pra exibir (fica null quando
+  // nao aplicavel, o embed do PostgREST e um left join).
+  let colaboradoresQuery = supabase
     .from("colaboradores")
-    .select("*")
-    .eq("setor_id", gestor.setor_id)
+    .select("*, setores(nome)")
     .order("nome", { ascending: true });
+  if (!ehGestorGeral) {
+    colaboradoresQuery = colaboradoresQuery.eq("setor_id", gestor.setor_id);
+  }
+  const { data: colaboradoresData } = await colaboradoresQuery;
+  const colaboradores = colaboradoresData as unknown as
+    | (Colaborador & { setores: { nome: string } | null })[]
+    | null;
+
+  let setores: Setor[] = [];
+  if (ehGestorGeral) {
+    const { data } = await supabase.from("setores").select("*").order("nome");
+    setores = data ?? [];
+  }
 
   return (
     <div className="app-shell">
@@ -34,25 +50,26 @@ export default async function ColaboradoresPage({
       </div>
 
       <main className="main">
-        <span className="gestor-badge">Gestor · {gestor.setor_nome}</span>
+        <span className="gestor-badge">Gestor · {gestor.setor_nome ?? "Todos os setores"}</span>
         <GestorTabs ativa="colaboradores" />
 
         {msg && <p className="success-msg">{decodeURIComponent(msg)}</p>}
         {erro && <p className="error-msg">{decodeURIComponent(erro)}</p>}
 
-        <p className="row-title">Time do setor</p>
+        <p className="row-title">{ehGestorGeral ? "Todos os colaboradores" : "Time do setor"}</p>
 
         {(colaboradores ?? []).length === 0 && (
           <p className="empty">Nenhum colaborador cadastrado ainda.</p>
         )}
 
-        {(colaboradores ?? []).map((colaborador: Colaborador) => (
+        {(colaboradores ?? []).map((colaborador) => (
           <div key={colaborador.id} className="admin-row" style={{ flexWrap: "wrap" }}>
             <div>
               <p className="admin-row-title">{colaborador.nome}</p>
               <p className="admin-row-sub">
                 {colaborador.email} ·{" "}
                 {colaborador.papel === "gestor" ? "Gestor" : "Colaborador"}
+                {ehGestorGeral && colaborador.setores?.nome ? ` · ${colaborador.setores.nome}` : ""}
                 {colaborador.senha_trocada ? "" : " · ainda na senha padrao"}
               </p>
             </div>
@@ -79,6 +96,24 @@ export default async function ColaboradoresPage({
 
         <p className="row-title">Adicionar colaborador</p>
         <form action="/api/gestor/colaboradores" method="post">
+          {ehGestorGeral && (
+            <>
+              <label className="field-label" htmlFor="setor_id">
+                Setor
+              </label>
+              <select id="setor_id" name="setor_id" className="field-input" required defaultValue="">
+                <option value="" disabled>
+                  Selecione o setor
+                </option>
+                {setores.map((setor) => (
+                  <option key={setor.id} value={setor.id}>
+                    {setor.nome}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
+
           <label className="field-label" htmlFor="nome">
             Nome
           </label>

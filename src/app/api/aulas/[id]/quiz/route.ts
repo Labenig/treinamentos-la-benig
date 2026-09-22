@@ -56,7 +56,15 @@ export async function GET(
     );
   }
 
-  const admin = createAdminClient();
+  let admin;
+  try {
+    admin = createAdminClient();
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Erro de configuracao no servidor." },
+      { status: 500 }
+    );
+  }
   const { data: perguntas } = await admin
     .from("perguntas")
     .select("id, enunciado, opcoes")

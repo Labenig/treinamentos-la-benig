@@ -20,6 +20,13 @@ export async function criarCurso(formData: FormData) {
   const gestor = await getGestorAtual();
   const supabase = await createClient();
 
+  // Gestor geral (setor_id nulo) administra todos os setores e precisa
+  // escolher pra qual o curso vai; gestor de setor sempre cria no proprio.
+  const setorId = gestor.setor_id ?? str(formData, "setor_id");
+  if (!setorId) {
+    throw new Error("Selecione o setor do curso.");
+  }
+
   const { data, error } = await supabase
     .from("cursos")
     .insert({
@@ -29,7 +36,7 @@ export async function criarCurso(formData: FormData) {
       cor_inicio: str(formData, "cor_inicio") || "#c9a227",
       cor_fim: str(formData, "cor_fim") || "#7a5c12",
       letra: str(formData, "letra") || str(formData, "titulo").charAt(0).toUpperCase(),
-      setor_id: gestor.setor_id,
+      setor_id: setorId,
       visivel_todos_setores: formData.get("visivel_todos_setores") === "on",
       ordem: num(formData, "ordem", 0),
     })

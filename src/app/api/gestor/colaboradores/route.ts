@@ -36,12 +36,24 @@ export async function POST(request: Request) {
     return erroRedirect("Preencha nome e e-mail.");
   }
 
+  // Gestor de setor sempre cadastra no proprio setor; gestor geral
+  // (setor_id nulo) escolhe o setor da pessoa no formulario.
+  const setorId = gestor.setor_id ?? String(formData.get("setor_id") ?? "").trim();
+  if (!setorId) {
+    return erroRedirect("Selecione o setor do colaborador.");
+  }
+
   const senhaPadrao = process.env.DEFAULT_PASSWORD;
   if (!senhaPadrao) {
     return erroRedirect("Senha padrao nao configurada no servidor (DEFAULT_PASSWORD).");
   }
 
-  const admin = createAdminClient();
+  let admin;
+  try {
+    admin = createAdminClient();
+  } catch (e) {
+    return erroRedirect(e instanceof Error ? e.message : "Erro de configuracao no servidor.");
+  }
 
   const { data: novoUsuario, error: erroCriacao } = await admin.auth.admin.createUser({
     email,
@@ -57,7 +69,7 @@ export async function POST(request: Request) {
     id: novoUsuario.user.id,
     nome,
     email,
-    setor_id: gestor.setor_id,
+    setor_id: setorId,
     papel: "colaborador",
     senha_trocada: false,
   });
