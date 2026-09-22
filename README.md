@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Treinamentos La Benig
 
-## Getting Started
+Plataforma de treinamentos internos da La Benig: catalogo estilo Netflix
+(curso → capitulo → aula), trilha sequencial com liberacao automatica,
+questionarios com banco de perguntas rotativo, e paineis de gestor por
+setor (Comercial, RH, Operacoes).
 
-First, run the development server:
+## Stack
+
+- [Next.js 16](https://nextjs.org) (App Router, TypeScript)
+- [Supabase](https://supabase.com) (Postgres + Auth + Row Level Security)
+- CSS puro (sem framework), replicando o design do prototipo original
+- Videos hospedados no OneDrive, embutidos via iframe
+
+## Como rodar localmente
 
 ```bash
+npm install
+cp .env.local.example .env.local
+# preencha SUPABASE_SERVICE_ROLE_KEY no .env.local (Supabase > Project
+# Settings > API > service_role) e ajuste DEFAULT_PASSWORD se quiser
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abra [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Regras de negocio
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Cada colaborador enxerga so os cursos do proprio setor, mais os cursos
+  marcados como visiveis para todos os setores.
+- A trilha e sequencial: a aula N+1 so libera depois que a aula N foi
+  confirmada como assistida e, se tiver questionario, aprovada com nota
+  >= 70%.
+- Nao ha rastreamento automatico de "% assistido" (o OneDrive nao expoe
+  isso) — o colaborador confirma manualmente com o botao "Ja assisti essa
+  aula".
+- Cada setor tem gestor(es), que administram cursos/capitulos/aulas e o
+  banco de perguntas do proprio setor, cadastram colaboradores e resetam
+  senha esquecida.
+- O banco de perguntas de cada aula deve ter mais perguntas cadastradas do
+  que o numero sorteado por tentativa, pra reduzir repeticao entre colegas
+  fazendo o questionario ao mesmo tempo.
 
-## Learn More
+## Seguranca
 
-To learn more about Next.js, take a look at the following resources:
+- RLS no Postgres restringe cada colaborador ao proprio setor (ou cursos
+  marcados como visiveis para todos) e cada gestor ao proprio setor.
+- A tabela `perguntas` (banco de questoes) nunca e exposta via RLS para
+  colaboradores — so gestores podem fazer select direto nela (pra montar o
+  banco de perguntas). Colaboradores recebem as perguntas sorteadas (sem a
+  resposta certa) atraves de uma rota de servidor com a service role key,
+  que tambem faz a correcao do questionario e a criacao/reset de conta de
+  colaborador.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deploy
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Projeto pensado pra deploy na Vercel, com as variaveis de ambiente de
+`.env.local.example` configuradas no projeto (`SUPABASE_SERVICE_ROLE_KEY`
+precisa ser adicionada manualmente, ela nunca fica em nenhum arquivo do
+repositorio).
