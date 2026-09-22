@@ -46,8 +46,14 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Forca troca de senha no primeiro acesso antes de liberar o resto do site.
-  if (user && !isPublic && path !== "/trocar-senha") {
+  // Forca troca de senha no primeiro acesso antes de liberar o resto do
+  // site. IMPORTANTE: precisa excluir tambem /api/trocar-senha (a rota que
+  // de fato troca a senha), nao so /trocar-senha (a pagina). Sem isso, o
+  // proprio POST do formulario de troca de senha era interceptado aqui —
+  // senha_trocada ainda era false nesse momento — e redirecionado de volta
+  // pra /trocar-senha antes de chegar na rota que troca a senha de verdade:
+  // por fora parecia que o botao "nao fazia nada".
+  if (user && !isPublic && path !== "/trocar-senha" && path !== "/api/trocar-senha") {
     const { data: colaborador } = await supabase
       .from("colaboradores")
       .select("senha_trocada")
@@ -57,7 +63,7 @@ export async function proxy(request: NextRequest) {
     if (colaborador && colaborador.senha_trocada === false) {
       const url = request.nextUrl.clone();
       url.pathname = "/trocar-senha";
-      return NextResponse.redirect(url);
+      return NextResponse.redirect(url, 303);
     }
   }
 

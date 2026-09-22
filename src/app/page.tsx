@@ -109,8 +109,8 @@ export default async function Home() {
                     <div
                       className="poster"
                       style={{
-                        background: `linear-gradient(135deg, ${curso.cor_inicio ?? "#c9a227"}, ${
-                          curso.cor_fim ?? "#7a5c12"
+                        background: `linear-gradient(135deg, ${curso.cor_inicio ?? "#fea10f"}, ${
+                          curso.cor_fim ?? "#e95b0c"
                         })`,
                       }}
                     >

@@ -72,7 +72,7 @@ export default async function NovoCursoPage() {
             name="cor_inicio"
             type="color"
             className="field-input"
-            defaultValue="#c9a227"
+            defaultValue="#fea10f"
           />
 
           <label className="field-label" htmlFor="cor_fim">
@@ -83,7 +83,7 @@ export default async function NovoCursoPage() {
             name="cor_fim"
             type="color"
             className="field-input"
-            defaultValue="#7a5c12"
+            defaultValue="#e95b0c"
           />
 
           <label className="field-label" htmlFor="ordem">

@@ -1,16 +1,28 @@
 :root {
-  --bg: #170f1b;
-  --surface: #241a29;
-  --surface-2: #2e2233;
-  --border: rgba(245, 237, 228, 0.09);
+  /* Paleta oficial da marca La Benig. */
+  --brand-navy: #103244;
+  --brand-green: #2a4432;
+  --brand-amber: #fea10f;
+  --brand-orange: #e95b0c;
+  --brand-red: #b1272f;
+
+  --bg: var(--brand-navy);
+  --surface: #254352; /* brand-navy clareado ~9% p/ superficie de card */
+  --surface-2: #35505e; /* brand-navy clareado ~16% p/ input/opcao */
+  --border: rgba(245, 237, 228, 0.1);
   --text: #f5ede4;
-  --text-secondary: #b7a8bc;
-  --text-muted: #7a6c80;
-  --accent: #c9a227;
-  --accent-ink: #3a2e0a;
-  --accent-soft: rgba(201, 162, 39, 0.18);
-  --success: #5ea97a;
-  --danger: #c1564a;
+  --text-secondary: #8e999c;
+  --text-muted: #77868c;
+  --accent: var(--brand-amber);
+  --accent-ink: var(--brand-navy);
+  --accent-soft: rgba(254, 161, 15, 0.18);
+  --accent-alt: var(--brand-orange); /* uso decorativo: gradientes, hover */
+  /* success/danger sao o brand-green/brand-red clareados: como texto puro
+     em cima do fundo escuro os tons originais ficam ilegiveis (contraste
+     abaixo de 2:1). Os tons de marca em si seguem disponiveis acima
+     (--brand-green/--brand-red) pra uso decorativo (blocos, gradientes). */
+  --success: #5aad74;
+  --danger: #e6777d;
   --radius: 14px;
   --font-display: "Fraunces", Georgia, "Times New Roman", serif;
   --font-body: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -159,7 +171,7 @@ main,
   left: 0;
   bottom: 0;
   height: 3px;
-  background: var(--accent);
+  background: linear-gradient(90deg, var(--accent), var(--accent-alt));
 }
 .card-title {
   font-size: 12.5px;

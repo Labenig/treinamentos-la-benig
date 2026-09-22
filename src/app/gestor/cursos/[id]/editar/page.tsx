@@ -71,7 +71,7 @@ export default async function EditarCursoPage({
             name="cor_inicio"
             type="color"
             className="field-input"
-            defaultValue={curso.cor_inicio ?? "#c9a227"}
+            defaultValue={curso.cor_inicio ?? "#fea10f"}
           />
 
           <label className="field-label" htmlFor="cor_fim">
@@ -82,7 +82,7 @@ export default async function EditarCursoPage({
             name="cor_fim"
             type="color"
             className="field-input"
-            defaultValue={curso.cor_fim ?? "#7a5c12"}
+            defaultValue={curso.cor_fim ?? "#e95b0c"}
           />
 
           <label className="field-label" htmlFor="ordem">
