@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL("/login", request.url), 303);
   }
 
   const { data: gestor } = await supabase
@@ -19,17 +19,21 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (!gestor || gestor.papel !== "gestor") {
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL("/", request.url), 303);
   }
 
   const formData = await request.formData();
   const nome = String(formData.get("nome") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
 
+  // 303 explicito: sem isso o redirect apos o POST volta como 307 e o
+  // navegador refaz a requisicao seguinte como POST numa pagina que so
+  // aceita GET — o cadastro ate acontecia, mas nem a mensagem de sucesso
+  // nem a de erro chegavam a aparecer.
   const erroRedirect = (mensagem: string) => {
     const url = new URL("/gestor/colaboradores", request.url);
     url.searchParams.set("erro", encodeURIComponent(mensagem));
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(url, 303);
   };
 
   if (!nome || !email) {
@@ -84,5 +88,5 @@ export async function POST(request: Request) {
     "msg",
     encodeURIComponent(`${nome} foi cadastrado(a) com a senha padrao.`)
   );
-  return NextResponse.redirect(url);
+  return NextResponse.redirect(url, 303);
 }

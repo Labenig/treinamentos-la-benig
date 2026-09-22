@@ -13,7 +13,7 @@ export async function POST(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL("/login", request.url), 303);
   }
 
   const { data: gestor } = await supabase
@@ -23,7 +23,7 @@ export async function POST(
     .maybeSingle();
 
   if (!gestor || gestor.papel !== "gestor") {
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL("/", request.url), 303);
   }
 
   const url = new URL("/gestor/colaboradores", request.url);
@@ -40,7 +40,7 @@ export async function POST(
 
   if (!alvo || (!ehGestorGeral && alvo.setor_id !== gestor.setor_id)) {
     url.searchParams.set("erro", encodeURIComponent("Colaborador nao encontrado."));
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(url, 303);
   }
 
   const senhaPadrao = process.env.DEFAULT_PASSWORD;
@@ -49,7 +49,7 @@ export async function POST(
       "erro",
       encodeURIComponent("Senha padrao nao configurada no servidor (DEFAULT_PASSWORD).")
     );
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(url, 303);
   }
 
   let admin;
@@ -60,13 +60,13 @@ export async function POST(
       "erro",
       encodeURIComponent(e instanceof Error ? e.message : "Erro de configuracao no servidor.")
     );
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(url, 303);
   }
   const { error } = await admin.auth.admin.updateUserById(id, { password: senhaPadrao });
 
   if (error) {
     url.searchParams.set("erro", encodeURIComponent("Nao foi possivel resetar a senha."));
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(url, 303);
   }
 
   await admin.from("colaboradores").update({ senha_trocada: false }).eq("id", id);
@@ -75,5 +75,5 @@ export async function POST(
     "msg",
     encodeURIComponent(`A senha de ${alvo.nome} foi resetada para a senha padrao.`)
   );
-  return NextResponse.redirect(url);
+  return NextResponse.redirect(url, 303);
 }

@@ -259,3 +259,73 @@ export async function atualizarPapelColaborador(formData: FormData) {
   revalidatePath("/gestor/colaboradores");
   redirect("/gestor/colaboradores");
 }
+
+// ---------- Setores ----------
+
+function paraColaboradores(mensagem: string, tipo: "erro" | "msg") {
+  redirect(`/gestor/colaboradores?${tipo}=${encodeURIComponent(mensagem)}`);
+}
+
+// Cadastro de setor: so o gestor geral (setor_id nulo) administra todos os
+// setores de uma vez, entao so ele pode criar novos. A RLS (policy
+// setores_insert) tambem exige isso, essa checagem aqui e so pra devolver
+// uma mensagem amigavel em vez do erro cru do Postgres.
+export async function criarSetor(formData: FormData) {
+  const gestor = await getGestorAtual();
+  if (gestor.setor_id !== null) {
+    paraColaboradores("So o gestor geral pode cadastrar setores.", "erro");
+    return;
+  }
+
+  const nome = str(formData, "nome");
+  if (!nome) {
+    paraColaboradores("Informe o nome do setor.", "erro");
+    return;
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("setores").insert({ nome });
+
+  if (error) {
+    const mensagem =
+      error.code === "23505" ? "Ja existe um setor com esse nome." : "Nao foi possivel criar o setor.";
+    paraColaboradores(mensagem, "erro");
+    return;
+  }
+
+  revalidatePath("/gestor/colaboradores");
+  paraColaboradores(`Setor "${nome}" criado.`, "msg");
+}
+
+// Mover colaborador de setor: mesma regra — so o gestor geral pode, porque
+// so ele enxerga/administra todos os setores ao mesmo tempo (a RLS da
+// tabela colaboradores tambem bloqueia um gestor de setor tentando mover
+// alguem pra fora do proprio setor).
+export async function moverColaboradorSetor(formData: FormData) {
+  const gestor = await getGestorAtual();
+  if (gestor.setor_id !== null) {
+    paraColaboradores("So o gestor geral pode mover colaboradores entre setores.", "erro");
+    return;
+  }
+
+  const id = str(formData, "id");
+  const setorId = str(formData, "setor_id");
+  if (!setorId) {
+    paraColaboradores("Selecione o setor de destino.", "erro");
+    return;
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("colaboradores")
+    .update({ setor_id: setorId })
+    .eq("id", id);
+
+  if (error) {
+    paraColaboradores("Nao foi possivel mover o colaborador de setor.", "erro");
+    return;
+  }
+
+  revalidatePath("/gestor/colaboradores");
+  paraColaboradores("Colaborador movido de setor.", "msg");
+}

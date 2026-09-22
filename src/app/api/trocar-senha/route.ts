@@ -14,17 +14,22 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL("/login", request.url), 303);
   }
 
   const formData = await request.formData();
   const senha = String(formData.get("senha") ?? "");
   const confirmar = String(formData.get("confirmar") ?? "");
 
+  // Redirect apos POST precisa ser 303: sem isso o NextResponse.redirect usa
+  // 307 por padrao, que manda o navegador refazer a requisicao seguinte como
+  // POST (em vez de GET) para a pagina de destino — que so aceita GET. Na
+  // pratica o clique parecia nao fazer nada (o campo limpava, mas a troca
+  // de senha nunca era confirmada nem o erro aparecia).
   const erroRedirect = (mensagem: string) => {
     const url = new URL("/trocar-senha", request.url);
     url.searchParams.set("erro", encodeURIComponent(mensagem));
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(url, 303);
   };
 
   if (senha.length < 6) {
@@ -58,5 +63,5 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.redirect(new URL("/", request.url));
+  return NextResponse.redirect(new URL("/", request.url), 303);
 }

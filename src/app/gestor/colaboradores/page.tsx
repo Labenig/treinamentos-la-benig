@@ -2,7 +2,11 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getGestorAtual } from "@/lib/auth";
 import GestorTabs from "@/components/GestorTabs";
-import { atualizarPapelColaborador } from "@/app/gestor/actions";
+import {
+  atualizarPapelColaborador,
+  criarSetor,
+  moverColaboradorSetor,
+} from "@/app/gestor/actions";
 import type { Colaborador, Setor } from "@/lib/database.types";
 
 export default async function ColaboradoresPage({
@@ -73,7 +77,7 @@ export default async function ColaboradoresPage({
                 {colaborador.senha_trocada ? "" : " · ainda na senha padrao"}
               </p>
             </div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
               <form action={atualizarPapelColaborador}>
                 <input type="hidden" name="id" value={colaborador.id} />
                 <input
@@ -90,9 +94,55 @@ export default async function ColaboradoresPage({
                   Resetar senha
                 </button>
               </form>
+              {ehGestorGeral && colaborador.setor_id !== null && (
+                <form
+                  action={moverColaboradorSetor}
+                  style={{ display: "flex", gap: 6, alignItems: "center" }}
+                >
+                  <input type="hidden" name="id" value={colaborador.id} />
+                  <select
+                    name="setor_id"
+                    className="field-input"
+                    style={{ width: "auto", padding: "8px 10px", fontSize: 12.5, marginBottom: 0 }}
+                    defaultValue={colaborador.setor_id ?? ""}
+                  >
+                    {setores.map((setor) => (
+                      <option key={setor.id} value={setor.id}>
+                        {setor.nome}
+                      </option>
+                    ))}
+                  </select>
+                  <button type="submit" className="btn btn-ghost btn-sm">
+                    Mover
+                  </button>
+                </form>
+              )}
             </div>
           </div>
         ))}
+
+        {ehGestorGeral && (
+          <>
+            <p className="row-title">Adicionar setor</p>
+            <form action={criarSetor} style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+              <div style={{ flex: 1 }}>
+                <label className="field-label" htmlFor="nome_setor" style={{ margin: "0 0 6px" }}>
+                  Nome do setor
+                </label>
+                <input
+                  id="nome_setor"
+                  name="nome"
+                  className="field-input"
+                  style={{ marginBottom: 0 }}
+                  required
+                />
+              </div>
+              <button type="submit" className="btn btn-primary btn-sm">
+                Criar setor
+              </button>
+            </form>
+          </>
+        )}
 
         <p className="row-title">Adicionar colaborador</p>
         <form action="/api/gestor/colaboradores" method="post">
