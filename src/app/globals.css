@@ -6,24 +6,38 @@
   --brand-orange: #e95b0c;
   --brand-red: #b1272f;
 
-  --bg: var(--brand-navy);
-  --surface: #254352; /* brand-navy clareado ~9% p/ superficie de card */
-  --surface-2: #35505e; /* brand-navy clareado ~16% p/ input/opcao */
-  --border: rgba(245, 237, 228, 0.1);
-  --text: #f5ede4;
-  --text-secondary: #8e999c;
-  --text-muted: #77868c;
+  /* Tema claro/clean: fundo quase branco, texto em brand-navy. Os tons de
+     marca ficam fortes o bastante pra funcionar direto como texto/acento
+     em cima de um fundo claro (diferente do tema escuro anterior, que
+     precisava clarear success/danger pra manter contraste). */
+  --bg: #faf8f4;
+  --surface: #ffffff;
+  --surface-2: #f2efe8; /* input/opcao: leve contraste sobre o card branco */
+  --surface-hover: #ece8de;
+  --border: rgba(16, 50, 68, 0.1);
+  --border-strong: rgba(16, 50, 68, 0.18);
+  --shadow-sm: 0 1px 2px rgba(16, 50, 68, 0.05), 0 1px 1px rgba(16, 50, 68, 0.04);
+  --shadow-md: 0 8px 20px rgba(16, 50, 68, 0.09), 0 2px 6px rgba(16, 50, 68, 0.05);
+  --text: var(--brand-navy);
+  --text-secondary: #52656d;
+  --text-muted: #7c8b90;
   --accent: var(--brand-amber);
   --accent-ink: var(--brand-navy);
-  --accent-soft: rgba(254, 161, 15, 0.18);
+  --accent-soft: rgba(254, 161, 15, 0.16);
   --accent-alt: var(--brand-orange); /* uso decorativo: gradientes, hover */
-  /* success/danger sao o brand-green/brand-red clareados: como texto puro
-     em cima do fundo escuro os tons originais ficam ilegiveis (contraste
-     abaixo de 2:1). Os tons de marca em si seguem disponiveis acima
-     (--brand-green/--brand-red) pra uso decorativo (blocos, gradientes). */
-  --success: #5aad74;
-  --danger: #e6777d;
+  /* o amber puro nao tem contraste suficiente como texto direto sobre o
+     fundo claro (funciona bem so como fundo de botao, com --accent-ink
+     por cima). --accent-text e um dourado mais escuro pra usar como cor
+     de texto/icone/sublinhado sobre --bg ou --surface (>=4.5:1 nos dois). */
+  --accent-text: #9c5f09;
+  --success: var(--brand-green);
+  --success-soft: rgba(42, 68, 50, 0.1);
+  --danger: var(--brand-red);
+  --danger-soft: rgba(177, 39, 47, 0.1);
+  --radius-sm: 9px;
   --radius: 14px;
+  --radius-lg: 18px;
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
   --font-display: "Fraunces", Georgia, "Times New Roman", serif;
   --font-body: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -64,7 +78,9 @@ a {
   position: sticky;
   top: 0;
   z-index: 5;
-  background: linear-gradient(var(--bg) 70%, transparent);
+  background: linear-gradient(var(--bg) 65%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   gap: 8px;
 }
 .brand {
@@ -76,7 +92,7 @@ a {
 }
 .brand b {
   font-weight: 600;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .topbar-actions {
   display: flex;
@@ -98,16 +114,23 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  transition: border-color 0.15s var(--ease), background 0.15s var(--ease), color 0.15s var(--ease);
+}
+.pill:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
 }
 .pill.on {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
   border-color: var(--accent);
 }
 .gestor-badge {
   font-size: 10.5px;
-  color: var(--accent);
-  background: rgba(201, 162, 39, 0.14);
+  font-weight: 600;
+  color: var(--accent-ink);
+  background: var(--accent-soft);
   border-radius: 20px;
   padding: 3px 9px;
   display: inline-block;
@@ -154,7 +177,7 @@ main,
 .poster {
   width: 128px;
   height: 80px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   margin-bottom: 8px;
   display: flex;
   align-items: center;
@@ -162,16 +185,31 @@ main,
   font-family: var(--font-display);
   font-size: 26px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.92);
+  color: rgba(255, 255, 255, 0.96);
+  text-shadow: 0 1px 4px rgba(16, 50, 68, 0.35);
   position: relative;
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease);
+}
+.card:hover .poster {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.poster::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(16, 50, 68, 0) 55%, rgba(16, 50, 68, 0.22));
+  pointer-events: none;
 }
 .poster .prog {
   position: absolute;
   left: 0;
   bottom: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-alt));
+  background: rgba(255, 255, 255, 0.85);
+  z-index: 1;
 }
 .card-title {
   font-size: 12.5px;
@@ -197,6 +235,10 @@ main,
   padding: 6px 0 14px;
   font-family: inherit;
   text-decoration: none;
+  transition: color 0.15s var(--ease);
+}
+.back-btn:hover {
+  color: var(--text);
 }
 .curso-hero {
   height: 130px;
@@ -207,12 +249,22 @@ main,
   padding: 16px;
   position: relative;
   overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+.curso-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(16, 50, 68, 0) 45%, rgba(16, 50, 68, 0.3));
+  pointer-events: none;
 }
 .curso-hero h1 {
   font-family: var(--font-display);
   font-size: 22px;
   font-weight: 600;
   margin: 0;
+  color: rgba(255, 255, 255, 0.97);
+  text-shadow: 0 1px 4px rgba(16, 50, 68, 0.4);
   position: relative;
   z-index: 1;
 }
@@ -236,18 +288,30 @@ main,
   border-radius: var(--radius);
   padding: 13px 14px;
   margin-bottom: 9px;
-  border: none;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
   width: 100%;
   text-align: left;
   font-family: inherit;
   color: inherit;
   cursor: pointer;
   text-decoration: none;
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease), transform 0.15s var(--ease);
+}
+.lesson:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 .lesson[disabled],
 .lesson.locked {
-  opacity: 0.5;
+  opacity: 0.55;
   cursor: not-allowed;
+}
+.lesson.locked:hover {
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+  transform: none;
 }
 .lesson-icon {
   font-size: 17px;
@@ -262,7 +326,7 @@ main,
   color: var(--text-muted);
 }
 .lesson-icon.next {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .lesson-title {
   font-size: 13.5px;
@@ -284,6 +348,13 @@ main,
   border-radius: var(--radius);
   padding: 12px 14px;
   margin-bottom: 9px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+.admin-row:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
 }
 .admin-row-title {
   font-size: 13px;
@@ -302,8 +373,18 @@ main,
   font-size: 15px;
   cursor: pointer;
   padding: 4px 6px;
+  border-radius: 6px;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+.icon-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
 }
 .icon-btn.danger {
+  color: var(--danger);
+}
+.icon-btn.danger:hover {
+  background: var(--danger-soft);
   color: var(--danger);
 }
 
@@ -321,16 +402,26 @@ textarea.field-input {
   background: var(--surface-2);
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   padding: 11px 12px;
   font-size: 13px;
   font-family: inherit;
   margin-bottom: 4px;
+  transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
 }
-.field-input:focus-visible,
+.field-input:hover {
+  border-color: var(--border-strong);
+}
+.field-input:focus,
+.field-input:focus-visible {
+  outline: none;
+  background: var(--surface);
+  border-color: var(--accent-text);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent-text);
   outline-offset: 1px;
 }
 .field-hint {
@@ -342,7 +433,7 @@ a:focus-visible {
 .btn {
   width: 100%;
   padding: 13px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   border: none;
   font-family: inherit;
   font-size: 13.5px;
@@ -354,25 +445,43 @@ a:focus-visible {
   justify-content: center;
   gap: 6px;
   text-decoration: none;
+  transition: transform 0.12s var(--ease), box-shadow 0.15s var(--ease), background 0.15s var(--ease);
 }
 .btn-primary {
   background: var(--accent);
   color: var(--accent-ink);
+  box-shadow: 0 1px 2px rgba(16, 50, 68, 0.08);
+}
+.btn-primary:hover {
+  background: var(--accent-alt);
+  box-shadow: var(--shadow-sm);
+}
+.btn-primary:active {
+  transform: scale(0.99);
 }
 .btn-primary:disabled {
   background: var(--surface-2);
   color: var(--text-muted);
   cursor: not-allowed;
+  box-shadow: none;
 }
 .btn-ghost {
   background: none;
   color: var(--text-secondary);
   border: 1px solid var(--border);
 }
+.btn-ghost:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+  background: var(--surface-2);
+}
 .btn-danger {
   background: none;
   color: var(--danger);
   border: 1px solid var(--danger);
+}
+.btn-danger:hover {
+  background: var(--danger-soft);
 }
 .btn-sm {
   width: auto;
@@ -382,8 +491,11 @@ a:focus-visible {
 
 .video-box {
   background: var(--surface-2);
-  border-radius: 10px;
-  height: 200px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: 220px;
   margin-bottom: 14px;
   display: flex;
   flex-direction: column;
@@ -392,6 +504,7 @@ a:focus-visible {
   gap: 10px;
   position: relative;
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 .video-hint {
   font-size: 11.5px;
@@ -413,14 +526,23 @@ a:focus-visible {
   align-items: center;
   gap: 10px;
   padding: 11px 12px;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
+  border: 1px solid transparent;
   margin-bottom: 7px;
   cursor: pointer;
   font-size: 13px;
+  transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
+}
+.opt:hover {
+  border-color: var(--border-strong);
+}
+.opt:has(input:checked) {
+  background: var(--accent-soft);
+  border-color: var(--accent);
 }
 .opt input {
-  accent-color: var(--accent);
+  accent-color: var(--accent-text);
 }
 
 .result-box {
@@ -454,7 +576,9 @@ a:focus-visible {
   width: 100%;
   max-width: 380px;
   background: var(--surface);
-  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-lg);
   padding: 28px 24px;
 }
 .auth-title {
@@ -470,11 +594,17 @@ a:focus-visible {
 }
 .error-msg {
   color: var(--danger);
+  background: var(--danger-soft);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
   font-size: 12.5px;
   margin: 8px 0 0;
 }
 .success-msg {
   color: var(--success);
+  background: var(--success-soft);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
   font-size: 12.5px;
   margin: 8px 0 0;
 }
@@ -504,9 +634,13 @@ a:focus-visible {
   white-space: nowrap;
   margin-right: 14px;
   text-decoration: none;
+  transition: color 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+.tab:hover {
+  color: var(--text-secondary);
 }
 .tab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
+  color: var(--accent-text);
+  border-bottom-color: var(--accent-text);
   font-weight: 600;
 }
