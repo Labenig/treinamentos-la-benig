@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Aula } from "@/lib/database.types";
@@ -122,6 +122,24 @@ export default function AulaView({
     setEtapa("resultado");
     router.refresh();
   }
+
+  // Largura real da caixa do video via JS, em vez de "width: 100vw" no CSS.
+  // document.documentElement.clientWidth exclui a faixa da scrollbar (o
+  // que "100vw" nao faz); em telas com scrollbar reservada (comum no
+  // Windows) "100vw" fica ~15-17px maior que a area visivel de verdade,
+  // e como a caixa tem overflow:hidden, isso cortava um pedacinho do
+  // conteudo do iframe (toolbar do OneDrive) em cada borda.
+  useEffect(() => {
+    function ajustarLargura() {
+      const caixa = videoBoxRef.current;
+      if (!caixa) return;
+      const larguraVisivel = document.documentElement.clientWidth;
+      caixa.style.width = `${Math.min(larguraVisivel, 720)}px`;
+    }
+    ajustarLargura();
+    window.addEventListener("resize", ajustarLargura);
+    return () => window.removeEventListener("resize", ajustarLargura);
+  }, []);
 
   // API de tela cheia nativa do browser aplicada na propria caixa do video
   // (nao no iframe), pra garantir um botao que funciona mesmo que os

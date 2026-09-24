@@ -495,8 +495,15 @@ a:focus-visible {
   border-radius: var(--radius);
   /* "Estoura" a largura de 560px do app-shell: fica centralizado na
      viewport (nao so na coluna), ate um teto maior, pra ficar bem maior
-     que o resto do conteudo sem mudar o layout geral da pagina. */
-  width: 100vw;
+     que o resto do conteudo sem mudar o layout geral da pagina.
+     Largura real e definida via JS (AulaView) com base na largura visivel
+     de verdade (document.documentElement.clientWidth), nao em 100vw: em
+     telas com scrollbar reservada (comum no Windows), 100vw inclui a
+     faixa da scrollbar e fica maior que a area visivel, cortando o
+     conteudo do iframe (toolbar do OneDrive) nas duas bordas. O width:
+     100% abaixo e so o fallback antes do JS calcular, pra nao "estourar"
+     sem controle caso o JS nao rode. */
+  width: 100%;
   max-width: 720px;
   position: relative;
   left: 50%;
