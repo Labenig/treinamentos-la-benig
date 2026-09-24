@@ -34,6 +34,11 @@ export interface Curso {
   criado_em: string;
 }
 
+export interface CursoSetor {
+  curso_id: string;
+  setor_id: string;
+}
+
 export interface Capitulo {
   id: string;
   curso_id: string;
@@ -49,6 +54,17 @@ export interface Aula {
   video_url: string | null;
   ordem: number;
   perguntas_por_tentativa: number;
+  criado_em: string;
+}
+
+export interface AulaMaterial {
+  id: string;
+  aula_id: string;
+  nome_arquivo: string;
+  storage_path: string;
+  tipo: string | null;
+  tamanho_bytes: number | null;
+  ordem: number;
   criado_em: string;
 }
 

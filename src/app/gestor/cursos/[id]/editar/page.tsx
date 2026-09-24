@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getGestorAtual } from "@/lib/auth";
 import { atualizarCurso, excluirCurso } from "@/app/gestor/actions";
-import type { Curso } from "@/lib/database.types";
+import type { Curso, Setor } from "@/lib/database.types";
 
 export default async function EditarCursoPage({
   params,
@@ -23,6 +23,15 @@ export default async function EditarCursoPage({
   if (!curso) {
     notFound();
   }
+
+  const { data: todosSetores } = await supabase.from("setores").select("*").order("nome");
+  const setores: Setor[] = todosSetores ?? [];
+
+  const { data: setoresExtrasAtuais } = await supabase
+    .from("curso_setores")
+    .select("setor_id")
+    .eq("curso_id", id);
+  const setoresExtrasIds = new Set((setoresExtrasAtuais ?? []).map((s) => s.setor_id as string));
 
   return (
     <div className="app-shell">
@@ -96,8 +105,30 @@ export default async function EditarCursoPage({
               name="visivel_todos_setores"
               defaultChecked={curso.visivel_todos_setores}
             />
-            Visivel para todos os setores (nao so o meu)
+            Visivel para todos os setores (nao so o dono)
           </label>
+
+          {setores.length > 0 && (
+            <>
+              <label className="field-label" style={{ marginTop: 14 }}>
+                Ou visivel so pra setores especificos (alem do dono do curso)
+              </label>
+              <p className="field-hint">Ignorado se &quot;todos os setores&quot; acima estiver marcado.</p>
+              {setores
+                .filter((setor) => setor.id !== curso.setor_id)
+                .map((setor) => (
+                  <label className="opt" key={setor.id}>
+                    <input
+                      type="checkbox"
+                      name="setores_extra"
+                      value={setor.id}
+                      defaultChecked={setoresExtrasIds.has(setor.id)}
+                    />
+                    {setor.nome}
+                  </label>
+                ))}
+            </>
+          )}
 
           <button type="submit" className="btn btn-primary">
             Salvar alteracoes

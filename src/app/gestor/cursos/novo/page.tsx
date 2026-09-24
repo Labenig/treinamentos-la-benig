@@ -8,12 +8,9 @@ export default async function NovoCursoPage() {
   const gestor = await getGestorAtual();
   const ehGestorGeral = gestor.setor_id === null;
 
-  let setores: Setor[] = [];
-  if (ehGestorGeral) {
-    const supabase = await createClient();
-    const { data } = await supabase.from("setores").select("*").order("nome");
-    setores = data ?? [];
-  }
+  const supabase = await createClient();
+  const { data: todosSetores } = await supabase.from("setores").select("*").order("nome");
+  const setores: Setor[] = todosSetores ?? [];
 
   return (
     <div className="app-shell">
@@ -95,6 +92,23 @@ export default async function NovoCursoPage() {
             <input type="checkbox" name="visivel_todos_setores" />
             Visivel para todos os setores (nao so o meu)
           </label>
+
+          {setores.length > 0 && (
+            <>
+              <label className="field-label" style={{ marginTop: 14 }}>
+                Ou visivel so pra setores especificos (alem do dono do curso)
+              </label>
+              <p className="field-hint">Ignorado se &quot;todos os setores&quot; acima estiver marcado.</p>
+              {setores
+                .filter((setor) => ehGestorGeral || setor.id !== gestor.setor_id)
+                .map((setor) => (
+                  <label className="opt" key={setor.id}>
+                    <input type="checkbox" name="setores_extra" value={setor.id} />
+                    {setor.nome}
+                  </label>
+                ))}
+            </>
+          )}
 
           <button type="submit" className="btn btn-primary">
             Criar curso

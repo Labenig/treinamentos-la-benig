@@ -14,7 +14,37 @@ function num(formData: FormData, campo: string, padrao = 0): number {
   return Number.isFinite(v) ? v : padrao;
 }
 
+// Checkboxes de mesmo "name" viram varias entradas no FormData; getAll pega
+// todas de uma vez (usado pros setores extras marcados no editor de curso).
+function lista(formData: FormData, campo: string): string[] {
+  return formData
+    .getAll(campo)
+    .map((v) => String(v).trim())
+    .filter(Boolean);
+}
+
 // ---------- Cursos ----------
+
+// Substitui por completo as linhas de visibilidade extra do curso em
+// curso_setores (apaga tudo e reinsere so os setores marcados agora).
+// setorDono nunca precisa de linha propria (ele ja enxerga o curso via
+// cursos.setor_id), entao fica de fora mesmo se vier marcado por engano.
+async function sincronizarSetoresExtras(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  cursoId: string,
+  setorIdsExtras: string[],
+  setorDono: string | null
+) {
+  await supabase.from("curso_setores").delete().eq("curso_id", cursoId);
+
+  const linhas = [...new Set(setorIdsExtras)]
+    .filter((setorId) => setorId !== setorDono)
+    .map((setorId) => ({ curso_id: cursoId, setor_id: setorId }));
+
+  if (linhas.length > 0) {
+    await supabase.from("curso_setores").insert(linhas);
+  }
+}
 
 export async function criarCurso(formData: FormData) {
   const gestor = await getGestorAtual();
@@ -47,6 +77,8 @@ export async function criarCurso(formData: FormData) {
     throw new Error(error?.message ?? "Nao foi possivel criar o curso.");
   }
 
+  await sincronizarSetoresExtras(supabase, data.id, lista(formData, "setores_extra"), setorId);
+
   revalidatePath("/gestor");
   redirect(`/gestor/cursos/${data.id}`);
 }
@@ -55,6 +87,12 @@ export async function atualizarCurso(formData: FormData) {
   await getGestorAtual();
   const supabase = await createClient();
   const id = str(formData, "id");
+
+  const { data: cursoAtual } = await supabase
+    .from("cursos")
+    .select("setor_id")
+    .eq("id", id)
+    .maybeSingle<{ setor_id: string }>();
 
   await supabase
     .from("cursos")
@@ -69,6 +107,13 @@ export async function atualizarCurso(formData: FormData) {
       ordem: num(formData, "ordem", 0),
     })
     .eq("id", id);
+
+  await sincronizarSetoresExtras(
+    supabase,
+    id,
+    lista(formData, "setores_extra"),
+    cursoAtual?.setor_id ?? null
+  );
 
   revalidatePath("/gestor");
   revalidatePath(`/gestor/cursos/${id}`);
@@ -182,6 +227,77 @@ export async function excluirAula(formData: FormData) {
 
   revalidatePath(`/gestor/cursos/${cursoId}`);
   redirect(`/gestor/cursos/${cursoId}`);
+}
+
+// ---------- Materiais de apoio (PDF, doc, csv, etc.) ----------
+
+const BUCKET_MATERIAIS = "aula-materiais";
+
+export async function enviarMaterial(formData: FormData) {
+  await getGestorAtual();
+  const supabase = await createClient();
+  const aulaId = str(formData, "aula_id");
+  const arquivo = formData.get("arquivo");
+
+  if (!(arquivo instanceof File) || arquivo.size === 0) {
+    throw new Error("Selecione um arquivo.");
+  }
+
+  // Nome unico no bucket (evita colisao entre arquivos com o mesmo nome em
+  // aulas diferentes ou reenviados); o nome original fica guardado no
+  // banco pra mostrar/baixar com o nome certo.
+  const extensao = arquivo.name.includes(".")
+    ? arquivo.name.slice(arquivo.name.lastIndexOf("."))
+    : "";
+  const caminho = `${aulaId}/${crypto.randomUUID()}${extensao}`;
+
+  const { error: erroUpload } = await supabase.storage
+    .from(BUCKET_MATERIAIS)
+    .upload(caminho, arquivo, { contentType: arquivo.type || undefined });
+
+  if (erroUpload) {
+    throw new Error(erroUpload.message);
+  }
+
+  const { error: erroInsert } = await supabase.from("aula_materiais").insert({
+    aula_id: aulaId,
+    nome_arquivo: arquivo.name,
+    storage_path: caminho,
+    tipo: arquivo.type || null,
+    tamanho_bytes: arquivo.size,
+  });
+
+  if (erroInsert) {
+    // Sem a linha no banco o arquivo fica orfao (ninguem enxerga ele), en-
+    // tao desfaz o upload pra nao acumular lixo no bucket.
+    await supabase.storage.from(BUCKET_MATERIAIS).remove([caminho]);
+    throw new Error(erroInsert.message);
+  }
+
+  revalidatePath(`/gestor/aulas/${aulaId}/editar`);
+  redirect(`/gestor/aulas/${aulaId}/editar`);
+}
+
+export async function excluirMaterial(formData: FormData) {
+  await getGestorAtual();
+  const supabase = await createClient();
+  const id = str(formData, "id");
+  const aulaId = str(formData, "aula_id");
+
+  const { data: material } = await supabase
+    .from("aula_materiais")
+    .select("storage_path")
+    .eq("id", id)
+    .maybeSingle<{ storage_path: string }>();
+
+  await supabase.from("aula_materiais").delete().eq("id", id);
+
+  if (material?.storage_path) {
+    await supabase.storage.from(BUCKET_MATERIAIS).remove([material.storage_path]);
+  }
+
+  revalidatePath(`/gestor/aulas/${aulaId}/editar`);
+  redirect(`/gestor/aulas/${aulaId}/editar`);
 }
 
 // ---------- Banco de perguntas ----------

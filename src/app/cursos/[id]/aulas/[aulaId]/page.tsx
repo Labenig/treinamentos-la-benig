@@ -1,8 +1,11 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getColaboradorAtual } from "@/lib/auth";
-import type { Aula } from "@/lib/database.types";
+import type { Aula, AulaMaterial } from "@/lib/database.types";
 import AulaView from "@/components/AulaView";
+
+const URL_MATERIAL_VALIDA_SEGUNDOS = 60 * 60; // 1h — da tempo de sobra pra
+// abrir a pagina e baixar o material sem precisar recarregar.
 
 export default async function AulaPage({
   params,
@@ -41,6 +44,30 @@ export default async function AulaPage({
     .eq("aula_id", aulaId)
     .maybeSingle();
 
+  const { data: materiaisBrutos } = await supabase
+    .from("aula_materiais")
+    .select("*")
+    .eq("aula_id", aulaId)
+    .order("criado_em", { ascending: true });
+
+  // Bucket e privado: cada material precisa de uma URL assinada (respeita
+  // a mesma RLS de visibilidade de curso/setor) pra poder ser baixado.
+  const materiais = await Promise.all(
+    ((materiaisBrutos ?? []) as AulaMaterial[]).map(async (material) => {
+      const { data: assinada } = await supabase.storage
+        .from("aula-materiais")
+        .createSignedUrl(material.storage_path, URL_MATERIAL_VALIDA_SEGUNDOS, {
+          download: material.nome_arquivo,
+        });
+      return {
+        id: material.id,
+        nome: material.nome_arquivo,
+        tamanhoBytes: material.tamanho_bytes,
+        url: assinada?.signedUrl ?? null,
+      };
+    })
+  );
+
   return (
     <div className="app-shell">
       <main className="main">
@@ -50,6 +77,7 @@ export default async function AulaPage({
           temQuiz={!!temQuiz}
           assistiuEm={progresso?.assistiu_em ?? null}
           aprovado={progresso?.aprovado ?? false}
+          materiais={materiais.filter((m) => m.url)}
         />
       </main>
     </div>

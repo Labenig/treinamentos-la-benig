@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Aula } from "@/lib/database.types";
@@ -18,6 +18,19 @@ interface Resultado {
   aprovado: boolean;
 }
 
+interface Material {
+  id: string;
+  nome: string;
+  tamanhoBytes: number | null;
+  url: string | null;
+}
+
+function formatarTamanho(bytes: number | null): string {
+  if (!bytes) return "";
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 type Etapa = "video" | "quiz" | "resultado";
 
 export default function AulaView({
@@ -26,14 +39,17 @@ export default function AulaView({
   temQuiz,
   assistiuEm,
   aprovado,
+  materiais = [],
 }: {
   cursoId: string;
   aula: Aula;
   temQuiz: boolean;
   assistiuEm: string | null;
   aprovado: boolean;
+  materiais?: Material[];
 }) {
   const router = useRouter();
+  const videoBoxRef = useRef<HTMLDivElement>(null);
   const [jaAssistiu, setJaAssistiu] = useState(!!assistiuEm);
   const [jaAprovado, setJaAprovado] = useState(aprovado);
   const [etapa, setEtapa] = useState<Etapa>("video");
@@ -107,6 +123,25 @@ export default function AulaView({
     router.refresh();
   }
 
+  // API de tela cheia nativa do browser aplicada na propria caixa do video
+  // (nao no iframe), pra garantir um botao que funciona mesmo que os
+  // controles do player embutido nao ofereçam essa opcao no iframe.
+  function alternarTelaCheia() {
+    const caixa = videoBoxRef.current;
+    if (!caixa) return;
+    const doc = document as Document & { webkitFullscreenElement?: Element | null };
+    const elemento = caixa as HTMLDivElement & { webkitRequestFullscreen?: () => void };
+
+    if (doc.fullscreenElement || doc.webkitFullscreenElement) {
+      const exitFn = document.exitFullscreen?.bind(document) ??
+        (document as unknown as { webkitExitFullscreen?: () => void }).webkitExitFullscreen?.bind(document);
+      exitFn?.();
+    } else {
+      const requestFn = elemento.requestFullscreen?.bind(elemento) ?? elemento.webkitRequestFullscreen?.bind(elemento);
+      requestFn?.();
+    }
+  }
+
   const todasRespondidas =
     perguntas.length > 0 && perguntas.every((p) => respostas[p.id] !== undefined);
 
@@ -122,15 +157,26 @@ export default function AulaView({
 
       {etapa === "video" && (
         <>
-          <div className="video-box">
+          <div className="video-box" ref={videoBoxRef}>
             {aula.video_url ? (
-              <iframe
-                src={aula.video_url}
-                title={aula.titulo}
-                allow="autoplay; fullscreen"
-                allowFullScreen
-                style={{ width: "100%", height: "100%", border: "none" }}
-              />
+              <>
+                <iframe
+                  src={aula.video_url}
+                  title={aula.titulo}
+                  allow="autoplay; fullscreen"
+                  allowFullScreen
+                  style={{ width: "100%", height: "100%", border: "none" }}
+                />
+                <button
+                  type="button"
+                  className="video-fullscreen-btn"
+                  onClick={alternarTelaCheia}
+                  aria-label="Tela cheia"
+                  title="Tela cheia"
+                >
+                  ⛶
+                </button>
+              </>
             ) : (
               <p className="video-hint">
                 O video dessa aula ainda nao foi cadastrado pelo gestor do
@@ -138,6 +184,32 @@ export default function AulaView({
               </p>
             )}
           </div>
+
+          {materiais.length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <p className="trilha-label" style={{ marginBottom: 6 }}>
+                Materiais de apoio
+              </p>
+              {materiais.map((material) => (
+                <a
+                  key={material.id}
+                  className="lesson"
+                  href={material.url ?? "#"}
+                  download={material.nome}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className="lesson-icon">📎</span>
+                  <div>
+                    <p className="lesson-title">{material.nome}</p>
+                    {material.tamanhoBytes ? (
+                      <p className="lesson-status">{formatarTamanho(material.tamanhoBytes)}</p>
+                    ) : null}
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
 
           {erro && <p className="error-msg">{erro}</p>}
 
