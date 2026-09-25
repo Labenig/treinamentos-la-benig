@@ -20,7 +20,11 @@ export default async function GestorPage() {
   if (!ehGestorGeral) {
     cursosQuery = cursosQuery.eq("setor_id", gestor.setor_id);
   }
-  const { data: cursosData } = await cursosQuery;
+  // Antes o "error" era descartado silenciosamente: qualquer falha (chave
+  // errada, RLS bloqueando, projeto Supabase errado etc) virava a mesma
+  // tela de "Nenhum curso cadastrado ainda", sem pista nenhuma do motivo.
+  // Agora, se der erro de verdade, mostramos a mensagem em vez de esconder.
+  const { data: cursosData, error: cursosError } = await cursosQuery;
   const cursos = cursosData as unknown as (Curso & { setores: { nome: string } | null })[] | null;
 
   return (
@@ -44,7 +48,13 @@ export default async function GestorPage() {
           + Novo curso
         </Link>
 
-        {(cursos ?? []).length === 0 && (
+        {cursosError && (
+          <p className="error-msg">
+            Erro ao carregar cursos: {cursosError.message} (codigo: {cursosError.code || "sem codigo"})
+          </p>
+        )}
+
+        {!cursosError && (cursos ?? []).length === 0 && (
           <p className="empty">Nenhum curso cadastrado ainda.</p>
         )}
 
