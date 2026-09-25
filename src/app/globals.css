@@ -504,7 +504,7 @@ a:focus-visible {
      100% abaixo e so o fallback antes do JS calcular, pra nao "estourar"
      sem controle caso o JS nao rode. */
   width: 100%;
-  max-width: 960px;
+  max-width: 720px;
   position: relative;
   left: 50%;
   transform: translateX(-50%);
