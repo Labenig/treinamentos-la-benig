@@ -12,9 +12,15 @@ export default async function GestorPage() {
   // Gestor de setor ve so o proprio (RLS ja cuida disso); gestor geral ve
   // os cursos de todos os setores. Sempre junta o nome do setor (fica null
   // quando nao aplicavel, o embed do PostgREST e um left join).
+  // "setores(nome)" sozinho ficou ambiguo depois que a tabela curso_setores
+  // passou a existir: o PostgREST enxerga dois caminhos entre cursos e
+  // setores (o FK direto cursos.setor_id, e o caminho via curso_setores) e
+  // nao sabe qual usar (erro PGRST201). O "!cursos_setor_id_fkey" aponta
+  // explicitamente pro FK direto, que e o que queremos aqui (o setor DONO
+  // do curso, nao a lista de setores extras com acesso).
   let cursosQuery = supabase
     .from("cursos")
-    .select("*, setores(nome)")
+    .select("*, setores!cursos_setor_id_fkey(nome)")
     .order("categoria", { ascending: true, nullsFirst: true })
     .order("ordem", { ascending: true });
   if (!ehGestorGeral) {
