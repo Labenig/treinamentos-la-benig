@@ -127,8 +127,7 @@ export default function AulaView({
   // document.documentElement.clientWidth exclui a faixa da scrollbar (o
   // que "100vw" nao faz); em telas com scrollbar reservada (comum no
   // Windows) "100vw" fica ~15-17px maior que a area visivel de verdade,
-  // e como a caixa tem overflow:hidden, isso cortava um pedacinho do
-  // conteudo do iframe (toolbar do OneDrive) em cada borda.
+  // e como a caixa tem overflow:hidden, isso gerava overflow horizontal.
   useEffect(() => {
     function ajustarLargura() {
       const caixa = videoBoxRef.current;
@@ -140,25 +139,6 @@ export default function AulaView({
     window.addEventListener("resize", ajustarLargura);
     return () => window.removeEventListener("resize", ajustarLargura);
   }, []);
-
-  // API de tela cheia nativa do browser aplicada na propria caixa do video
-  // (nao no iframe), pra garantir um botao que funciona mesmo que os
-  // controles do player embutido nao ofereçam essa opcao no iframe.
-  function alternarTelaCheia() {
-    const caixa = videoBoxRef.current;
-    if (!caixa) return;
-    const doc = document as Document & { webkitFullscreenElement?: Element | null };
-    const elemento = caixa as HTMLDivElement & { webkitRequestFullscreen?: () => void };
-
-    if (doc.fullscreenElement || doc.webkitFullscreenElement) {
-      const exitFn = document.exitFullscreen?.bind(document) ??
-        (document as unknown as { webkitExitFullscreen?: () => void }).webkitExitFullscreen?.bind(document);
-      exitFn?.();
-    } else {
-      const requestFn = elemento.requestFullscreen?.bind(elemento) ?? elemento.webkitRequestFullscreen?.bind(elemento);
-      requestFn?.();
-    }
-  }
 
   const todasRespondidas =
     perguntas.length > 0 && perguntas.every((p) => respostas[p.id] !== undefined);
@@ -177,24 +157,20 @@ export default function AulaView({
         <>
           <div className="video-box" ref={videoBoxRef}>
             {aula.video_url ? (
-              <>
-                <iframe
-                  src={aula.video_url}
-                  title={aula.titulo}
-                  allow="autoplay; fullscreen"
-                  allowFullScreen
-                  style={{ width: "100%", height: "100%", border: "none" }}
-                />
-                <button
-                  type="button"
-                  className="video-fullscreen-btn"
-                  onClick={alternarTelaCheia}
-                  aria-label="Tela cheia"
-                  title="Tela cheia"
-                >
-                  ⛶
-                </button>
-              </>
+              // O OneDrive bloqueia (via CSP frame-ancestors) ser exibido
+              // dentro de um iframe de qualquer site que nao seja da
+              // Microsoft - entao em vez de tentar embutir o video aqui,
+              // abrimos o link numa aba nova do navegador.
+              <a
+                href={aula.video_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="video-watch-link"
+              >
+                <span className="video-play-icon">▶</span>
+                <span className="video-watch-label">Assistir aula</span>
+                <span className="video-watch-sub">Abre em uma nova aba</span>
+              </a>
             ) : (
               <p className="video-hint">
                 O video dessa aula ainda nao foi cadastrado pelo gestor do

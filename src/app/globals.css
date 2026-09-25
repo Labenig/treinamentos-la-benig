@@ -499,10 +499,10 @@ a:focus-visible {
      Largura real e definida via JS (AulaView) com base na largura visivel
      de verdade (document.documentElement.clientWidth), nao em 100vw: em
      telas com scrollbar reservada (comum no Windows), 100vw inclui a
-     faixa da scrollbar e fica maior que a area visivel, cortando o
-     conteudo do iframe (toolbar do OneDrive) nas duas bordas. O width:
-     100% abaixo e so o fallback antes do JS calcular, pra nao "estourar"
-     sem controle caso o JS nao rode. */
+     faixa da scrollbar e fica maior que a area visivel de verdade,
+     gerando overflow horizontal. O width: 100% abaixo e so o fallback
+     antes do JS calcular, pra nao "estourar" sem controle caso o JS nao
+     rode. */
   width: 100%;
   max-width: 720px;
   position: relative;
@@ -525,38 +525,48 @@ a:focus-visible {
   max-width: 240px;
   text-align: center;
 }
-.video-fullscreen-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 2;
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  border: none;
-  background: rgba(16, 50, 68, 0.55);
-  color: #fff;
+/* O video nao fica mais embutido num iframe: o OneDrive bloqueia, via
+   Content-Security-Policy (frame-ancestors), ser exibido dentro de um
+   frame de qualquer site que nao seja da propria Microsoft - isso nao
+   tem contorno possivel do nosso lado (nem trocando o tipo de link).
+   Entao o "video-box" agora e um cartao clicavel que abre o link do
+   video numa aba nova do navegador. */
+.video-watch-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+  cursor: pointer;
+}
+.video-play-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
-  backdrop-filter: blur(2px);
-  transition: background 0.15s var(--ease);
+  font-size: 24px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s var(--ease), background 0.15s var(--ease);
 }
-.video-fullscreen-btn:hover {
-  background: rgba(16, 50, 68, 0.8);
+.video-watch-link:hover .video-play-icon {
+  background: var(--accent-alt);
+  transform: scale(1.06);
 }
-.video-box:fullscreen,
-.video-box:-webkit-full-screen {
-  max-width: none;
-  border-radius: 0;
+.video-watch-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
 }
-.video-box:fullscreen iframe,
-.video-box:-webkit-full-screen iframe {
-  width: 100%;
-  height: 100%;
+.video-watch-sub {
+  font-size: 11.5px;
+  color: var(--text-muted);
 }
 
 .quiz-q {
