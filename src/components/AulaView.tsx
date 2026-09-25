@@ -134,7 +134,7 @@ export default function AulaView({
       const caixa = videoBoxRef.current;
       if (!caixa) return;
       const larguraVisivel = document.documentElement.clientWidth;
-      caixa.style.width = `${Math.min(larguraVisivel, 720)}px`;
+      caixa.style.width = `${Math.min(larguraVisivel, 960)}px`;
     }
     ajustarLargura();
     window.addEventListener("resize", ajustarLargura);
